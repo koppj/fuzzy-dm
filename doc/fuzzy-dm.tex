@@ -1,0 +1,291 @@
+\documentclass{scrartcl}
+
+\usepackage{amsmath,amssymb,slashed}
+\usepackage{cleveref}
+\usepackage{graphicx}
+\usepackage{ctable}
+\usepackage{longtable}
+\usepackage{underscore}
+
+% Define bold face typewriter font
+\DeclareFontShape{OT1}{cmtt}{bx}{n}{
+  <5><6><7><8><9><10><10.95><12><14.4><17.28><20.74><24.88>cmttb10}{}
+
+
+\title{Couplings between neutrinos and fuzzy dark matter in GLoBES}
+\author{Vedran Brdar, Joachim Kopp, Jia Liu, Xiaoping Wang}
+\date{v1.0 (June 2019)}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+%---------------------
+
+If the dark matter (DM) in the Universe couples to neutrinos, the propagation
+of neutrinos through the omnipresent DM background can affect oscillations.
+This is similar in spirit to Mikheyev-Smirnov-Wolfenstein-type matter effects
+in the Standard Model: neutrinos can undergo coherent forward scattering on
+the background particles, i.e.\ they can interact with the background
+without changing their quantum state, or the background's quantum state. It
+is therefore impossible to tell which background particle a given neutrino
+has interacted with, so all of them contribute coherently, leading to
+a huge enhancement factor. The enhancement factor is proportional to the
+number density of backgroud particles, and it is for this reason that
+neutrino--DM interactions are most easily observable for extremely light DM
+particles ($\lesssim 10^{-20}$\,eV), which are called ``fuzzy DM'' because of
+their huge Compton wave length. Given the known mass density of DM,
+fuzzy DM must have a huge number density.  Neutrino interactions with fuzzy DM
+have first been investigated in \cite{Berlin:2016woy, Krnjaic:2017zlz,
+Brdar:2017kbt}.
+
+The present code makes this scenario accessible to GLoBES.
+It supports both, couplings of neutrinos to fuzzy DM in the form of new
+scalar particles, or in the form of new vector bosons. In the latter case,
+it is possible to specify the polarization of the DM relative to the neutrio
+beam direction, or to assume unpolarized DM.  (It is not fully understood
+whether or not fuzzy vector DM would be polarized or unpolarized in the Milky
+Way.)
+
+
+\subsection{Scalar DM}
+
+For scalar DM, the relevant terms in the phenomenological Lagrangian are
+\cite{Brdar:2017kbt}
+\begin{align}
+  \mathcal{L}_\text{scalar}
+    &= \bar\nu_L^\alpha i \slashed\partial \nu_L^\alpha
+     - \tfrac{1}{2} m_\nu^{\alpha\beta} \overline{(\nu_L^c)^\alpha} \nu_L^\beta
+     - \tfrac{1}{2} y^{\alpha\beta} \phi \, \overline{(\nu_L^c)^\alpha} \nu_L^\beta \,.
+  \label{eq:L-scalar}
+\end{align}
+The first term is the standard kinetic term, the second one is a standard
+Majoarana mass term, and the third one describes the couplings between
+the scalar DM particle $\phi$ and the left-handed SM neutrinos
+$\nu_L^\alpha$. The strength of the coupling is denoted by the complex symmetric
+matrix $y^{\alpha\beta}$.
+In all terms, the flavor indices $\alpha$ and $\beta$
+run over $e$, $\mu$, or $\tau$, and $\nu_L^c$ refers to the charge conjugated
+field.
+
+The DM field $\phi$ in \cref{eq:L-scalar} can be written as
+\begin{align}
+  \phi = \phi_0 \cos(m_\phi t) \,,
+  \label{eq:phi-osc}
+\end{align}
+with the DM mass $m_\phi$ and the normalization
+\begin{align}
+  \phi_0 = \frac{\sqrt{2 \rho_\phi}}{m_\phi} \,.
+  \label{eq:phi-0}
+\end{align}
+In the last expression, $\rho_\phi \simeq 0.3\,\text{GeV}/\text{cm}^3$ is the
+DM energy density at the location of the Earth ($\sim 8$~\,kpc from the
+Galactic Center). \Cref{eq:phi-osc} describes a slowly varying
+function of time, with a periodicity $T = 2\pi/m_\phi = 4.77\,\text{days}
+\times (10^{-20}\,\text{eV} / m_\phi)$.
+
+In view of \cref{eq:phi-0}, we define the \emph{effective DM couplings}
+\begin{align}
+  \chi^{\alpha\beta} \equiv y^{\alpha\beta} \frac{\sqrt{2 \rho_\phi}}{m_\phi} \,.
+  \label{eq:chi-dm}
+\end{align}
+
+We see from \cref{eq:L-scalar} that neutrino couplings to scalar DM
+can be viewed as a dynamic modification to the neutrino mass matrix.
+This is exactly how they are implemented in {\tt fuzzy-dm.c}: the code
+reconstructs the vacuum mass matrix from the given parameters, adds
+the DM contribution, and then re-diagonalizes the result to obtain an
+effective PMNS matrix and effective mass squared differences.
+
+
+\subsection{Vector DM}
+
+The Lagrangian for DM couplings to fuzzy vector DM is \cite{Brdar:2017kbt}
+\begin{align}
+  \mathcal{L}_\text{vector}
+    &= \bar\nu_L^\alpha i \slashed\partial \nu_L^\alpha
+     - \tfrac{1}{2} m_\nu^{\alpha\beta} \overline{(\nu_L^c)^\alpha} \nu_L^\beta
+     + g Q^{\alpha\beta} \phi^\mu \bar{\nu}_L^\alpha \gamma_\mu \nu_L^\beta \,,
+  \label{eq:L-vector}
+\end{align}
+The first two terms, which appear also in the standard scenario,  are the
+same as in \cref{eq:L-scalar} above; the last term has the form of a gauge
+coupling with gauge boson $\phi^\mu$ and flavor-dependent (complex hermitian)
+charges $Q^{\alpha\beta}$.  We write $\phi^\mu$ as
+\begin{align}
+  \phi^\mu = \phi_0 \xi^\mu \cos(m_\phi t) \,,
+  \label{eq:phi-osc-vector}
+\end{align}
+where $\phi^0$ is the same as in \cref{eq:phi-0}.  The polarization vector $\xi^0$
+describes the alignment of the DM field relative to the beam, where the
+beam is always assumed to travel in the positive $z$-direction.
+The effect of the DM--neutrino coupling for vector DM is to modify the neutrino
+dispersion relation into
+\begin{align}
+  E^2 = p^2 + m_\nu^2  \qquad\to\qquad
+  E^2 &= [p^\mu + g Q \xi^\mu \phi_0]^2 + m_\nu^2 \,.
+  \label{eq:dispersion}
+\end{align}
+(Here, we have for simplicity dropped the time-dependent cosine functions.)
+The code uses \cref{eq:dispersion} to compute the modified Hamiltonian for
+neutrinos propagating through the DM background.  Specifically, the Hamiltonian
+turns into
+\begin{align}
+  \hat{H} = \frac{1}{2E} U^\dag \begin{pmatrix}
+                                  0 &                 &                  \\
+                                    & \Delta m_{21}^2 &                  \\
+                                    &                 & \Delta m_{31}^2
+                                \end{pmatrix}  U
+          + g^2 \phi_0^2
+            \begin{pmatrix}
+              |Q^{ee}|^2     &  |Q^{e\mu}|^2    &  |Q^{e\tau}|^2    \\
+              |Q^{\mu e}|^2  &  |Q^{\mu\mu}|^2  &  |Q^{\mu\tau}|^2  \\
+              |Q^{\tau e}|^2 &  |Q^{\tau\mu}|^2 &  |Q^{\tau\tau}|^2
+            \end{pmatrix}
+          + g Q \phi_0 p^\mu \xi_\mu \,.
+\end{align}
+The last term is relevant only for polarized vector DM -- for unpolarized DM,
+it averages to zero when $\xi^\mu$ is averaged over.
+
+
+\section{Initializing the Oscillation Engine}
+%--------------------------------------------
+
+To use the code, include {\tt fuzzy-dm.c} in your project by modifying your
+{\tt Makefile} accordingly, and {\tt \#include} the header file {\tt fuzzy-dm.h}
+in your source code.
+
+The first step is to initialize the oscillation engine using the function
+\begin{verbatim}
+  int dm_init_probability_engine(int dm_type);
+\end{verbatim}
+The argument {\tt dm_type} can be {\tt DM_SCALAR} for scalar DM,
+{\tt DM_VECTOR_POLARIZED} for polarized vector DM, or
+{\tt DM_VECTOR_UNPOLARIZED} for unpolarized vector DM.  These three
+constants are defined in {\tt fuzzy-dm.h}.  The DM type can be
+changed later using
+\begin{verbatim}
+  int dm_set_dm_type(int dm_type);
+\end{verbatim}
+and it can be queried using
+\begin{verbatim}
+  int dm_get_dm_type();
+\end{verbatim}
+
+The oscillation engine knows of course the six standard oscillation parameters
+(named {\tt TH12}, {\tt TH13}, {\tt TH23}, {\tt DELTA_0}, {\tt DM21}, and
+{\tt DM31}), but it also defines the following additional parameters
+(in the given order):
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{4.0cm}p{9.5cm}}
+  \toprule
+  \tt M1     & the lightest neutrino mass eigenstate (which becomes relevant
+               for neutrino couplings to scalar DM) \\
+  \midrule
+  \tt M_DM   & the DM mass (currently unused) \\
+  \midrule
+  \tt ABS_CHI_$\alpha\beta$ \newline
+      ARG_CHI_$\alpha\beta$
+             & the absolute values and phases of the effective DM--neutrino
+               couplings $\chi^{\alpha\eta}$ defined in \cref{eq:chi-dm}. The flavor
+               indices $\alpha$ and $\beta$ can be {\tt E}, {\tt MU}, or
+               {\tt TAU}.\\
+  \midrule
+  \tt ABS_XI_$i$, ARG_XI_$i$
+             & the components of the DM polarization 4-vector $\xi$. The index
+               $i$ runs from 0 to 3. Note that there is some redundancy in these
+               parameters: for scalar DM, they are completely ignored, for
+               unpolarized vector DM, only $|\vec\xi|$ matters, and for
+               polarized vector DM, the physically relevant parameters
+               are $|\vec\xi|$, $\xi^0$, and $\xi^3$. (We always assume the
+               neutrino beam to be oriented along the $z$-axis.) \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+It is strongly recommended to use {\tt glbSetParamName} to assign human-readable
+names to the oscillation parameters by which they can be referred to in
+subsequent calls to {\tt glbSetOscParamByName} and {\tt
+glbSetProjectionFlagByName}.  The pre-defined names listed above can be retrieved
+using
+\begin{verbatim}
+  const char *dm_get_param_name(const int i);
+\end{verbatim}
+
+
+\section{Making the Oscillation Engine Known to GLoBES}
+%------------------------------------------------------
+
+After initializing the fuzzy DM oscillation, we need to tell GLoBES that we want to
+used it by calling
+\begin{verbatim}
+  glbRegisterProbabilityEngine(n_params,
+                               &dm_probability_matrix,
+                               &dm_set_oscillation_parameters,
+                               &dm_get_oscillation_parameters,
+                               NULL);
+\end{verbatim}
+The number of oscillation parameters {\tt n_params} in the first line can in principle
+be deduced from the above table, but we highly advice not to hardcode it, but
+to instead retrieve it by calling
+\begin{verbatim}
+  int dm_get_n_osc_params();
+\end{verbatim}
+before calling {\tt glbRegistareProbabilityEngine} (but after calling
+{\tt dm_init_probability_engine}.
+
+As with any new probability engine, the call to {\tt
+glbRegisterProbabilityEngine} has to occur before any calls to {\tt
+glbAllocParams} or {\tt glbAllocProjection} to make sure that all parameter and
+projection vectors have the correct length.
+
+Having initialized and registered the non-standard probability engine, we can
+use all GLoBES functions in the same way as we would for standard
+oscillations.
+
+After using the fuzz DM oscillation engine, we may want to release the
+(small) amount of memory allocated by it by calling
+\begin{verbatim}
+  dm_free_probability_engine();
+\end{verbatim}
+
+
+\section{Time Dependence}
+%------------------------
+
+Simulating the time dependence appearing in \cref{eq:phi-osc,eq:phi-osc-vector},
+as well as a possible time dependence in the polarization vector $\xi^\mu$
+coming from the motion of the Earth through the DM fluid, is not intrinsically
+part of this package.  The reason is that it can be easily implemented by
+varying $\phi_0$.
+
+A possible strategy for including the time dependence is to run the GLoBES
+simulation and fit multiple times for different time bins (with suitably
+scaled {\tt @time} parameter in the flux definition). As the data in
+the different time bins are independent, the total $\chi^2$ from such an
+analysis can be obtained simply by adding the $\chi^2$'s from all time bins.
+
+If running the full simulation for sufficiently many time steps is too
+computationally expensive, the following approximation should work: use
+only few time bins for the main simulation, but when analyzing it (for
+instance in a user-defined GLoBES $\chi^2$ function), divide it into
+finer time bins, interpolating between the coarse ones with a suitable
+chosen oscillatory fit function (for instance a polynomial in $\cos(m_\phi t)$).
+The parameters of the fit function typically do not need to be determined
+separately for each energy bin because they very slowly with energy.  It
+is instead sufficient to carry out the fit in only a few energy bins
+and then interpolate the fit parameters in between.  If more accuracy in
+the time domain is desired, one could imagine evaluating oscillation
+probabilities with finer time binning for just those few bins.
+
+
+\bibliographystyle{plain}
+\bibliography{fuzzy-dm}
+
+
+\end{document}
+
