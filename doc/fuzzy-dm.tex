@@ -133,11 +133,11 @@ The code uses \cref{eq:dispersion} to compute the modified Hamiltonian for
 neutrinos propagating through the DM background.  Specifically, the Hamiltonian
 turns into
 \begin{align}
-  \hat{H} = \frac{1}{2E} U^\dag \begin{pmatrix}
-                                  0 &                 &                  \\
-                                    & \Delta m_{21}^2 &                  \\
-                                    &                 & \Delta m_{31}^2
-                                \end{pmatrix}  U
+  \hat{H} = \frac{1}{2E} U \begin{pmatrix}
+                             0 &                 &                  \\
+                               & \Delta m_{21}^2 &                  \\
+                               &                 & \Delta m_{31}^2
+                           \end{pmatrix}  U^\dag
           + \frac{1}{2 E} g^2 \bar\phi^2 \vec\xi^2 Q^\dag Q
           - g Q \bar\phi p^\mu \xi_\mu \,.
 \end{align}
@@ -191,6 +191,30 @@ The oscillation engine knows of course the six standard oscillation parameters
                couplings $\chi^{\alpha\eta}$ defined in \cref{eq:chi-dm}. The flavor
                indices $\alpha$ and $\beta$ can be {\tt E}, {\tt MU}, or
                {\tt TAU}.\\
+  \midrule
+  \tt ABS_CHI_$ij$ \newline
+      ARG_CHI_$ij$
+             & the absolute values and phases of the effective DM--neutrino
+               couplings $\chi^{ij}$ expressed in the mass basis ($i,j = 1,2,3$).
+               As {\tt ABS_CHI_$ij$}, {\tt ARG_CHI_$ij$} on one side, and
+               {\tt ABS_CHI_$\alpha\beta$}, {\tt ARG_CHI_$\alpha\beta$} on the
+               other side are not independent, only one of these parameters sets
+               should be used in any given simulaion, with the parameters of the
+               other set set to zero. If parameters from both sets are non-zero,
+               the code will first transform the matrix defined by
+               {\tt ABS_CHI_$ij$}, {\tt ARG_CHI_$ij$} into the flavor basis
+               and then add the matrix defined by {\tt ABS_CHI_$\alpha\beta$},
+               {\tt ARG_CHI_$\alpha\beta$}.
+
+               Calls to {\tt glbGetOscillationParameters} will always return
+               the coupling matrix in the flavor basis, and will set
+               {\tt ABS_CHI_$ij$} and {\tt ARG_CHI_$ij$} to zero.
+
+               For scalar DM, the coupling matrix should be symmetric, for
+               vector DM it should be Hermitian. If this requirement is
+               not satisfied, the matrix will be made symmetric / hermitian
+               before using it to compute oscillation probabilities.
+               \\
   \midrule
   \tt ABS_XI_$i$, ARG_XI_$i$
              & the components of the DM polarization 4-vector $\xi$. The index

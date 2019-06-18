@@ -192,8 +192,11 @@ int main(int argc, char *argv[])
   if (strcasecmp(argv[1], "DM_CHI2") == 0)
   {
     /* Simulate SM event rates */
-    glbSetOscParamByName(true_values, 0., "ABS_CHI_MUTAU");
-    glbSetOscParamByName(true_values, 0., "ABS_CHI_TAUMU");
+    glbSetOscParamByName(true_values, 0., "ABS_CHI_MUMU");
+    glbSetOscParamByName(true_values, 0., "ABS_CHI_TAUTAU");
+    glbSetOscParamByName(true_values, 0., "ABS_CHI_11");
+    glbSetOscParamByName(true_values, 0., "ABS_CHI_22");
+    glbSetOscParamByName(true_values, 0., "ABS_CHI_33");
     glbSetOscillationParameters(true_values);
     glbSetRates();
 
@@ -219,14 +222,22 @@ int main(int argc, char *argv[])
 
       /* chi^2 for scalar DM fit */
       dm_set_dm_type(DM_SCALAR);
-      glbSetOscParamByName(test_values, chi_dm, "ABS_CHI_MUTAU");
-      glbSetOscParamByName(test_values, chi_dm, "ABS_CHI_TAUMU");
+      glbSetOscParamByName(test_values, 0.,     "ABS_CHI_MUMU");
+      glbSetOscParamByName(test_values, 0.,     "ABS_CHI_TAUTAU");
+      glbSetOscParamByName(test_values, chi_dm, "ABS_CHI_11");
+      glbSetOscParamByName(test_values, chi_dm, "ABS_CHI_22");
+      glbSetOscParamByName(test_values, chi_dm, "ABS_CHI_33");
       glbSetOscParamByName(test_values, 0.,     "ABS_XI_3");
       chi2_scalar = glbChiNP(test_values, NULL, GLB_ALL);
 
       /* chi^2 for polarized vector DM fit */
       dm_set_dm_type(DM_VECTOR_POLARIZED);
-      glbSetOscParamByName(test_values, 1., "ABS_XI_3");
+      glbSetOscParamByName(test_values,  chi_dm, "ABS_CHI_MUMU");
+      glbSetOscParamByName(test_values, -chi_dm, "ABS_CHI_TAUTAU");
+      glbSetOscParamByName(test_values,  0.,     "ABS_CHI_11");
+      glbSetOscParamByName(test_values,  0.,     "ABS_CHI_22");
+      glbSetOscParamByName(test_values,  0.,     "ABS_CHI_33");
+      glbSetOscParamByName(test_values,  1.,     "ABS_XI_3");
       chi2_vector_pol = glbChiNP(test_values, NULL, GLB_ALL);
 
       /* chi^2 for unpolarized vector DM fit */

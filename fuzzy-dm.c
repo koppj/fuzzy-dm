@@ -629,7 +629,8 @@ int dm_init_probability_engine(int _dm_type)
             + (n_flavors-1)            // mass squared differences
             + 1                        // lightest neutrino mass eigenvalue
             + 1                        // DM mass
-            + 2*SQR(n_flavors)         // 3x3 complex effective DM field
+            + 2*SQR(n_flavors)         // 3x3 complex effective DM field in mass basis
+            + 2*SQR(n_flavors)         // 3x3 complex effective DM field in flavor basis
             + 8;                       // DM polarization 4-vector
   const int _rotation_order[][2] = { {2,3}, {1,3}, {1,2} };
   const int _phase_order[] = { -1, 0, -1 };
@@ -683,8 +684,15 @@ int dm_init_probability_engine(int _dm_type)
   sprintf(dm_param_strings[k++], "M1");         // Lightest neutrino mass eigenvalue
   sprintf(dm_param_strings[k++], "MDM");        // DM mass
 
+  for (int i=0; i < n_flavors; i++)             // Effective DM field in mass basis
+    for (int j=0; j < n_flavors; j++)
+    {
+      sprintf(dm_param_strings[k++], "ABS_CHI_%d%d", i+1, j+1);
+      sprintf(dm_param_strings[k++], "ARG_CHI_%d%d", i+1, j+1);
+    }
+
   const char *flavors[] = { "E", "MU", "TAU" };
-  for (int i=0; i < n_flavors; i++)             // Effective DM field
+  for (int i=0; i < n_flavors; i++)             // Effective DM field in flavor basis
     for (int j=0; j < n_flavors; j++)
     {
       sprintf(dm_param_strings[k++], "ABS_CHI_%s%s", flavors[i], flavors[j]);
@@ -875,13 +883,37 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
   m_1  = glbGetOscParams(p, k++);               // Lightest neutrino mass eigenvalue
   m_dm = glbGetOscParams(p, k++);               // DM mass
 
-  for (i=0; i < n_flavors; i++)                 // Effective DM field
+
+  double complex chi_dm_mass[n_flavors][n_flavors];   // Effective DM field in mass basis
+  int chi_dm_mass_given = 0;
+  for (i=0; i < n_flavors; i++)
   {
     for (j=0; j < n_flavors; j++)
     {
-      chi_dm[i][j] = glbGetOscParams(p,k) * cexp(I*glbGetOscParams(p,k+1));
+      chi_dm_mass[i][j] = glbGetOscParams(p,k) * cexp(I*glbGetOscParams(p,k+1));
+      if (chi_dm_mass[i][j] != 0.)
+        chi_dm_mass_given = 1;
       k += 2;
     }
+  }
+
+  double complex chi_dm_flavor[n_flavors][n_flavors]; // Effective DM field in flavor basis
+  int chi_dm_flavor_given = 0;
+  for (i=0; i < n_flavors; i++)
+  {
+    for (j=0; j < n_flavors; j++)
+    {
+      chi_dm_flavor[i][j] = glbGetOscParams(p,k) * cexp(I*glbGetOscParams(p,k+1));
+      if (chi_dm_flavor[i][j] != 0.)
+        chi_dm_flavor_given = 1;
+      k += 2;
+    }
+  }
+
+  if (chi_dm_mass_given && chi_dm_flavor_given)
+  {
+    fprintf(stderr, "dm_set_oscillation_parameters: warning: DM couplings "
+                    "given both in mass and flavor basis.\n");
   }
 
   for (i=0; i < 4; i++)                         // DM polarization
@@ -917,14 +949,24 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
   // ---------------------------------------------------------------------------
   if (dm_type == DM_SCALAR)
   {
+    // Rotate chi_dm_mass into flavor basis, add contributions given in the flavor basis
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+        _T[i][j] = chi_dm_mass[i][j];
+    gsl_blas_zgemm(CblasNoTrans, CblasTrans,   C1, T, U, C0, C);   // C = T.U^t
+    gsl_blas_zgemm(CblasNoTrans, CblasNoTrans, C1, U, C, C0, T);   // T = U.C
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+        chi_dm[i][j] = _T[i][j] + chi_dm_flavor[i][j];
+
     // check symmetry of DM coupling matrix
     for (i=1; i < n_flavors; i++)
       for (j=i+1; j < n_flavors; j++)
       {
         if (cabs(chi_dm[i][j] - chi_dm[j][i]) / cabs(chi_dm[i][j] + chi_dm[j][i]) > 1e-12)
         {
-          fprintf(stderr, "dm_set_oscillation_parameters: warning: non-symmetric "
-                          "coupling matrix will be symmetrized.\n");
+//          fprintf(stderr, "dm_set_oscillation_parameters: warning: non-symmetric "
+//                          "coupling matrix will be symmetrized.\n");
           chi_dm[i][j] = chi_dm[j][i] = 0.5 * (chi_dm[i][j] + chi_dm[j][i]);
         }
       }
@@ -1035,6 +1077,16 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
   // -------------------
   else if (dm_type == DM_VECTOR_POLARIZED)
   {
+    // Rotate chi_dm_mass into flavor basis, add contributions given in the flavor basis
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+        _T[i][j] = chi_dm_mass[i][j];
+    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, T, U, C0, C);   // C = T.U^+
+    gsl_blas_zgemm(CblasNoTrans, CblasNoTrans,   C1, U, C, C0, T);   // T = U.C
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+        chi_dm[i][j] = _T[i][j] + chi_dm_flavor[i][j];
+
     // check hermiticity of DM couplings
     for (i=1; i < n_flavors; i++)
       for (j=i+1; j < n_flavors; j++)
@@ -1042,8 +1094,8 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
         if (cabs(chi_dm[i][j] - conj(chi_dm[j][i]))
                / (cabs(chi_dm[i][j]) + cabs(chi_dm[j][i])) > 1e-12)
         {
-          fprintf(stderr, "dm_set_oscillation_parameters: warning: non-hermitian "
-                          "coupling matrix will be made hermitian.\n");
+//          fprintf(stderr, "dm_set_oscillation_parameters: warning: non-hermitian "
+//                          "coupling matrix will be made hermitian.\n");
           chi_dm[i][j] = 0.5 * (chi_dm[i][j] + conj(chi_dm[j][i]));
           chi_dm[j][i] = conj(chi_dm[i][j]);
         }
@@ -1080,6 +1132,16 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
   // ------------------------------------------------------------------------------
   else if (dm_type == DM_VECTOR_UNPOLARIZED)
   {
+    // Rotate chi_dm_mass into flavor basis, add contributions given in the flavor basis
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+        _T[i][j] = chi_dm_mass[i][j];
+    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, T, U, C0, C);   // C = T.U^+
+    gsl_blas_zgemm(CblasNoTrans, CblasNoTrans,   C1, U, C, C0, T);   // T = U.C
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+        chi_dm[i][j] = _T[i][j] + chi_dm_flavor[i][j];
+
     // check hermiticity of DM couplings
     for (i=1; i < n_flavors; i++)
       for (j=i+1; j < n_flavors; j++)
@@ -1087,8 +1149,8 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
         if (cabs(chi_dm[i][j] - conj(chi_dm[j][i]))
                / (cabs(chi_dm[i][j]) + cabs(chi_dm[j][i])) > 1e-12)
         {
-          fprintf(stderr, "dm_set_oscillation_parameters: warning: non-hermitian "
-                          "coupling matrix will be made hermitian.\n");
+//          fprintf(stderr, "dm_set_oscillation_parameters: warning: non-hermitian "
+//                          "coupling matrix will be made hermitian.\n");
           chi_dm[i][j] = 0.5 * (chi_dm[i][j] + conj(chi_dm[j][i]));
           chi_dm[j][i] = conj(chi_dm[i][j]);
         }
@@ -1150,10 +1212,23 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
 int dm_get_oscillation_parameters(glb_params p, void *user_data)
 // ----------------------------------------------------------------------------
 // Returns the current set of oscillation parameters.
+// If *user_data == DM_FLAVOR_basis, the function fills the
+// ABS/ARG_CHI_ALPHABETA entries of p (DM coupling in flavor basis).  If
+// *user_data == DM_MASS_basis, the function fills the ABS/ARG_CHI_IJ entries
+// of p (DM coupling in mass basis).  The default is DM_FLAVOR_BASIS.
+// By filling only one or the other set of equivalent parameters, we ensure
+// that the results from dm_get_oscillation_parameters can be used directly
+// in dm_set_oscillation_parameters.
 // ----------------------------------------------------------------------------
 {
   int i, j, k;
+
+  int mode = DM_FLAVOR_BASIS;
+  if (user_data)
+    mode = *((int *) user_data);
+
   glbDefineParams(p, th[1][2], th[1][3], th[2][3], delta[0], dmsq[0], dmsq[1]);
+                                                // standard oscillation parameters
   
   k = 6;
   for (i=4; i <= n_flavors; i++)                // Mass squared differences
@@ -1169,13 +1244,56 @@ int dm_get_oscillation_parameters(glb_params p, void *user_data)
   for (i=1; i <= n_phases-1; i++)               // Sterile phases
     glbSetOscParams(p, delta[i], k++);
 
-  for (i=0; i < n_flavors; i++)                 // Effective DM field
-    for (j=0; j < n_flavors; j++)
-    {
-      glbSetOscParams(p, cabs(chi_dm[i][j]), k);
-      glbSetOscParams(p, carg(chi_dm[i][j]), k+1);
-      k += 2;
-    }
+ 
+  if (mode == DM_MASS_BASIS)                    // Effective DM field in the mass basis
+  {
+    gsl_matrix_complex *T  = gsl_matrix_complex_alloc(n_flavors, n_flavors); // temp. storage
+    gsl_matrix_complex *C  = gsl_matrix_complex_alloc(n_flavors, n_flavors); // temp. storage
+    double complex (*_T)[n_flavors]
+      = (double complex (*)[n_flavors]) gsl_matrix_complex_ptr(T, 0, 0);
+
+    // Transform effective DM field into the mass basis (for ABS/ARG_CHI_IJ)
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+        _T[i][j] = chi_dm[i][j];
+    gsl_blas_zgemm(CblasNoTrans,   CblasNoTrans, C1, T, U, C0, C);   // C = T.U
+    gsl_blas_zgemm(CblasConjTrans, CblasNoTrans, C1, U, C, C0, T);   // T = U^+.C
+
+    for (i=0; i < n_flavors; i++) 
+      for (j=0; j < n_flavors; j++)
+      {
+        glbSetOscParams(p, cabs(_T[i][j]), k);
+        glbSetOscParams(p, carg(_T[i][j]), k+1);
+        k += 2;
+      }
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+      {
+        glbSetOscParams(p, 0., k);
+        glbSetOscParams(p, 0., k+1);
+        k += 2;
+      }
+
+    gsl_matrix_complex_free(C);
+    gsl_matrix_complex_free(T);
+  }
+  else                                          // Effective DM field in the flavor basis
+  {
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+      {
+        glbSetOscParams(p, 0., k);
+        glbSetOscParams(p, 0., k+1);
+        k += 2;
+      }
+    for (i=0; i < n_flavors; i++)
+      for (j=0; j < n_flavors; j++)
+      {
+        glbSetOscParams(p, cabs(chi_dm[i][j]), k);
+        glbSetOscParams(p, carg(chi_dm[i][j]), k+1);
+        k += 2;
+      }
+  }
 
   for (i=0; i < 4; i++)                         // DM polarization
   {

@@ -7,12 +7,26 @@
 #include <globes/globes.h>
 
 // Arrangement of oscillation parameters in glb_params data structure:
+//
 //   th12,    th13,    th23,    deltaCP,
 //   dm21,    dm31
-//   |\chi_{ee},   arg(\chi_{ee}),   ..., |\chi_{tt}|,  arg(\chi_{et}),
+//
+//   |\chi_{11},   arg(\chi_{11}),   ..., |\chi_{13}|,  arg(\chi_{13}),
+//           ...             ...           ...
+//   |\chi_{31},   arg(\chi_{31}),   ..., |\chi_{33}|,  arg(\chi_{33}),
+//
+//   |\chi_{ee},   arg(\chi_{ee}),   ..., |\chi_{et}|,  arg(\chi_{et}),
 //           ...             ...           ...
 //   |\chi_{te},   arg(\chi_{te}),   ..., |\chi_{tt}|,  arg(\chi_{tt}),
+//
 //   |\xi^0|, arg(\xi^0) ... |\xi^3|, arg(\xi^3)
+//
+// The parameters \chi_{\alpha\beta} (flavor basis) and \chi_{ij}
+// (mass basis) are not independent. It is possible (but dangerous) to
+// mix parameters from both sets. In this case, GLobES will first set
+// \chi_{ij}, transform to the flavor basis, and then override the
+// result with any no-zero \chi_{\alpha\beta}.
+//
 // The last 8 parameters (corresponding to the DM polarization) will
 // be ignored for scalar DM. For unpolarized vector DM, the norm of \xi
 // acts as an additional scale factor for the neutrino--DM couplings;
@@ -34,6 +48,9 @@ extern char dm_param_strings[][64];
                           + 1 + 1 + 2*DM_MAX_FLAVORS*DM_MAX_FLAVORS + 8)
                               // see explanations in dm_init_probability_engine()
 
+// Should dm_get_oscillation_parameters return chi_dm in mass or flavor basis?
+#define DM_FLAVOR_BASIS  0
+#define DM_MASS_BASIS    1
 
 // Function declarations
 // ---------------------
