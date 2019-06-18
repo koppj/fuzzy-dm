@@ -71,12 +71,12 @@ field.
 
 The DM field $\phi$ in \cref{eq:L-scalar} can be written as
 \begin{align}
-  \phi = \phi_0 \cos(m_\phi t) \,,
+  \phi = \bar\phi \cos(m_\phi t) \,,
   \label{eq:phi-osc}
 \end{align}
 with the DM mass $m_\phi$ and the normalization
 \begin{align}
-  \phi_0 = \frac{\sqrt{2 \rho_\phi}}{m_\phi} \,.
+  \bar\phi = \frac{\sqrt{2 \rho_\phi}}{m_\phi} \,.
   \label{eq:phi-0}
 \end{align}
 In the last expression, $\rho_\phi \simeq 0.3\,\text{GeV}/\text{cm}^3$ is the
@@ -114,7 +114,7 @@ same as in \cref{eq:L-scalar} above; the last term has the form of a gauge
 coupling with gauge boson $\phi^\mu$ and flavor-dependent (complex hermitian)
 charges $Q^{\alpha\beta}$.  We write $\phi^\mu$ as
 \begin{align}
-  \phi^\mu = \phi_0 \xi^\mu \cos(m_\phi t) \,,
+  \phi^\mu = \bar\phi \xi^\mu \cos(m_\phi t) \,,
   \label{eq:phi-osc-vector}
 \end{align}
 where $\phi^0$ is the same as in \cref{eq:phi-0}.  The polarization vector $\xi^0$
@@ -124,7 +124,8 @@ The effect of the DM--neutrino coupling for vector DM is to modify the neutrino
 dispersion relation into
 \begin{align}
   E^2 = p^2 + m_\nu^2  \qquad\to\qquad
-  E^2 &= [p^\mu + g Q \xi^\mu \phi_0]^2 + m_\nu^2 \,.
+%  E^2 &= [p^\mu + g Q \xi^\mu \bar\phi]^2 + m_\nu^2 \,.
+  (E + g Q \xi^0 \bar\phi)^2 = (\vec{p} + g Q \vec\xi \bar\phi)^2 + m_\nu^2 \,.
   \label{eq:dispersion}
 \end{align}
 (Here, we have for simplicity dropped the time-dependent cosine functions.)
@@ -137,16 +138,13 @@ turns into
                                     & \Delta m_{21}^2 &                  \\
                                     &                 & \Delta m_{31}^2
                                 \end{pmatrix}  U
-          + g^2 \phi_0^2
-            \begin{pmatrix}
-              |Q^{ee}|^2     &  |Q^{e\mu}|^2    &  |Q^{e\tau}|^2    \\
-              |Q^{\mu e}|^2  &  |Q^{\mu\mu}|^2  &  |Q^{\mu\tau}|^2  \\
-              |Q^{\tau e}|^2 &  |Q^{\tau\mu}|^2 &  |Q^{\tau\tau}|^2
-            \end{pmatrix}
-          + g Q \phi_0 p^\mu \xi_\mu \,.
+          + \frac{1}{2 E} g^2 \bar\phi^2 \vec\xi^2 Q^\dag Q
+          - g Q \bar\phi p^\mu \xi_\mu \,.
 \end{align}
 The last term is relevant only for polarized vector DM -- for unpolarized DM,
-it averages to zero when $\xi^\mu$ is averaged over.
+it averages to zero when $\xi^\mu$ is averaged over.  All terms are replaced
+by their complex conjugates when considering oscillations of antineutrinos.
+The last term also changes sign for antineutrinos.
 
 
 \section{Initializing the Oscillation Engine}
@@ -261,7 +259,7 @@ Simulating the time dependence appearing in \cref{eq:phi-osc,eq:phi-osc-vector},
 as well as a possible time dependence in the polarization vector $\xi^\mu$
 coming from the motion of the Earth through the DM fluid, is not intrinsically
 part of this package.  The reason is that it can be easily implemented by
-varying $\phi_0$.
+varying $\bar\phi$.
 
 A possible strategy for including the time dependence is to run the GLoBES
 simulation and fit multiple times for different time bins (with suitably

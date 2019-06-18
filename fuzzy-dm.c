@@ -933,11 +933,11 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
     // mass basis, transforming to the flavor basis using the vacuum PMNS matrix,
     // and adding the DM terms.
     // To diagonalize the complex symmetric matrix M, we use the following procedure:
-    //   - diagonalize M^\dag.M  -> diag(lambda) = R^\dag . M^\dag.M . R
+    //   - diagonalize M^+.M  -> diag(lambda) = R^+ . M^+.M . R
     //   - compute C = R^t . M . R, which is complex symmetric
-    //   - we see that C^\dag.C = R^\dag.M^\dag.M.R = diag(lambda). Writing C = X + i*Y
-    //     (with real X and Y), we have C^\dag.C = X^2 + Y^2 + i * (X.Y - Y.X).
-    //     Since C^\dag.C is real, we must have [X,Y]=0, so X and Y can be
+    //   - we see that C^+.C = R^+.M^+.M.R = diag(lambda). Writing C = X + i*Y
+    //     (with real X and Y), we have C^+.C = X^2 + Y^2 + i * (X.Y - Y.X).
+    //     Since C^+.C is real, we must have [X,Y]=0, so X and Y can be
     //     diagonalized simultaneously. Compute this diagonalization:
     //       W^t . X . W = diag(m)
     //     In case X has two or more degenerate eigenvalues, we still need to
@@ -954,16 +954,16 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
     _M[0][0] = m_1;                                                // M = m_\nu
     for (i=1; i < n_flavors; i++)
       _M[i][i] = sqrt(dmsq[i-1] + m_1);
-    gsl_blas_zgemm(CblasConjTrans, CblasTrans,     C1, M, U, C0, T); // T = M^\dag . U^t
-    gsl_blas_zgemm(CblasConjTrans, CblasConjTrans, C1, T, U, C0, M); // M = T^\dag . U^\dag
-      // What we actually would like to compute is U^* . M . U^\dag. As BLAS does
+    gsl_blas_zgemm(CblasConjTrans, CblasTrans,     C1, M, U, C0, T); // T = M^+ . U^t
+    gsl_blas_zgemm(CblasConjTrans, CblasConjTrans, C1, T, U, C0, M); // M = T^+ . U^+
+      // What we actually would like to compute is U^* . M . U^+. As BLAS does
       // not support complex conjugation in matrix multiplication, we instead compute
-      // (U^* . M)^\dag first, and take the Hermitian conjugate again in the 2nd step
+      // (U^* . M)^+ first, and take the Hermitian conjugate again in the 2nd step
     for (i=0; i < n_flavors; i++)                                  // M = M + \chi
       for (j=0; j < n_flavors; j++)
         _M[i][j] += chi_dm[i][j];
 
-    gsl_blas_zgemm(CblasConjTrans, CblasNoTrans, C1, M, M, C0, T); // T = M^\dag.M
+    gsl_blas_zgemm(CblasConjTrans, CblasNoTrans, C1, M, M, C0, T); // T = M^+.M
     gsl_eigen_hermv(T, lambda, R, wsH);                            // (l,R) = eigensystem(T)
     gsl_blas_zgemm(CblasNoTrans, CblasNoTrans, C1, M, R, C0, T);   // T = M.R
     gsl_blas_zgemm(CblasTrans,   CblasNoTrans, C1, R, T, C0, C);   // C = R^t.T
@@ -1026,7 +1026,7 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
     // Pre-compute energy independent matrix H0 * E
     for (i=1; i < n_flavors; i++)
       _H_template_1[i][i] = 0.5*dmsq_eff[i-1];
-    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, H_template_1, U, C0, T); // T=H0.U^\dag
+    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, H_template_1, U, C0, T); // T=H0.U^+
     gsl_blas_zgemm(CblasNoTrans, CblasNoTrans,   C1, U, T, C0, H_template_1); // H0=U.T
   }
 
@@ -1051,20 +1051,20 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
 
     // check normalization of polarization vector
     double xi_norm_sq = 0.0;
-    for (i=0; i < 4; i++)
+    for (i=1; i < 4; i++)
       xi_norm_sq += SQR(creal(xi_dm[i])) + SQR(cimag(xi_dm[i]));
-    if (fabs(xi_norm_sq) - 1. > 1e-12)
-    {
-      fprintf(stderr, "dm_set_oscillation_parameters: warning: polarization "
-                      "vector not normalized.\n");
-    }
+//    if (fabs(xi_norm_sq) - 1. > 1e-12)
+//    {
+//      fprintf(stderr, "dm_set_oscillation_parameters: warning: polarization "
+//                      "vector not normalized.\n");
+//    }
 
     // coefficient of 1/E in the Hamiltonian
     for (i=1; i < n_flavors; i++)
       _H_template_1[i][i] = 0.5*dmsq[i-1];
-    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, H_template_1, U, C0, T); // T=H0.U^\dag
+    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, H_template_1, U, C0, T); // T=H0.U^+
     gsl_blas_zgemm(CblasNoTrans, CblasNoTrans, C1, U, T, C0, H_template_1);   // H0=U.T
-    for (i=0; i < n_flavors; i++)
+    for (i=0; i < n_flavors; i++)                                             // H0+=chi^+ chi
       for (j=0; j < n_flavors; j++)
         for (k=0; k < n_flavors; k++)
           _H_template_1[i][j] += conj(chi_dm[k][i]) * chi_dm[k][j] * xi_norm_sq;
@@ -1072,12 +1072,12 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
     // energy-independent terms in the Hamiltonian
     for (i=0; i < n_flavors; i++)
       for (j=0; j < n_flavors; j++)
-        _H_template_2[i][j] = chi_dm[i][j] * (xi_dm[0] + xi_dm[3]);
+        _H_template_2[i][j] = -chi_dm[i][j] * (xi_dm[0] - xi_dm[3]);
   }
 
 
-  // Unpolarized Vector DM: same as vector DM, but without the p.\xi term
-  // --------------------------------------------------------------------
+  // Unpolarized Vector DM: same as polarized vector DM, but without the p.\xi term
+  // ------------------------------------------------------------------------------
   else if (dm_type == DM_VECTOR_UNPOLARIZED)
   {
     // check hermiticity of DM couplings
@@ -1096,20 +1096,20 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
 
     // check normalization of polarization vector
     double xi_norm_sq = 0.0;
-    for (i=0; i < 4; i++)
+    for (i=1; i < 4; i++)
       xi_norm_sq += SQR(creal(xi_dm[i])) + SQR(cimag(xi_dm[i]));
-    if (fabs(xi_norm_sq) - 1. > 1e-12)
-    {
-      fprintf(stderr, "dm_set_oscillation_parameters: warning: polarization "
-                      "vector not normalized.\n");
-    }
+//    if (fabs(xi_norm_sq) - 1. > 1e-12)
+//    {
+//      fprintf(stderr, "dm_set_oscillation_parameters: warning: polarization "
+//                      "vector not normalized.\n");
+//    }
 
     // coefficient of 1/E in the Hamiltonian
     for (i=1; i < n_flavors; i++)
       _H_template_1[i][i] = 0.5*dmsq[i-1];
-    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, H_template_1, U, C0, T); // T=H0.U^\dag
+    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, H_template_1, U, C0, T); // T=H0.U^+
     gsl_blas_zgemm(CblasNoTrans, CblasNoTrans, C1, U, T, C0, H_template_1);   // H0=U.T
-    for (i=0; i < n_flavors; i++)
+    for (i=0; i < n_flavors; i++)                                             // H0+=chi^+ chi
       for (j=0; j < n_flavors; j++)
         for (k=0; k < n_flavors; k++)
           _H_template_1[i][j] += conj(chi_dm[k][i]) * chi_dm[k][j] * xi_norm_sq;
@@ -1124,7 +1124,7 @@ int dm_set_oscillation_parameters(glb_params p, void *user_data)
     // coefficient of 1/E in the Hamiltonian
     for (i=1; i < n_flavors; i++)
       _H_template_1[i][i] = 0.5*dmsq[i-1];
-    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, H_template_1, U, C0, T); // T=H0.U^\dag
+    gsl_blas_zgemm(CblasNoTrans, CblasConjTrans, C1, H_template_1, U, C0, T); // T=H0.U^+
     gsl_blas_zgemm(CblasNoTrans, CblasNoTrans, C1, U, T, C0, H_template_1);   // H0=U.T
   }
 
@@ -1221,7 +1221,7 @@ int dm_hamiltonian_cd(double E, double rho, double Ne, int cp_sign)
     for (i=0; i < n_flavors; i++)
       for (j=0; j < n_flavors; j++)
         _H[i][j] = conj(_H_template_1[i][j] * inv_E
-                     + _H_template_2[i][j]); // delta_CP -> -delta_CP
+                     - _H_template_2[i][j]); // delta_CP -> -delta_CP
   }
 
   // Add standard matter potential \sqrt{2} G_F (N_e - N_n/2) for \nu_e and
@@ -1312,7 +1312,7 @@ int dm_S_matrix_cd(double E, double L, double rho, int cp_sign, void *user_data)
   // ... and transform it to the flavour basis
   gsl_matrix_complex_set_zero(T0);
   double complex *p = &_T0[0][0];
-  for (i=0; i < n_flavors; i++)              // T0 = S.Q^\dagger
+  for (i=0; i < n_flavors; i++)              // T0 = S.Q^+
     for (j=0; j < n_flavors; j++)
     {
       for (int k=0; k < n_flavors; k++)
